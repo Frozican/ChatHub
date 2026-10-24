@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#17191f">
+  <title>ChatHub Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body{min-height:100dvh;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at top,#292c42,#17181c 65%)}
+    .admin-card{width:min(440px,100%);background:#2b2d31;border:1px solid #41434b;border-radius:16px;padding:28px;box-shadow:0 22px 80px #0006}
+    .admin-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+    .admin-logo{background:#5865f2;border-radius:12px;padding:12px;font-weight:900}
+    .admin-card h1{font-size:24px;margin:0 0 6px}.sub{color:#b5bac1;line-height:1.5}
+    label{display:block;margin:16px 0 6px;color:#dbdee1;font-size:13px}
+    input{display:block;width:100%;margin-top:7px;padding:12px;background:#1e1f22;border:1px solid #111;color:#fff;border-radius:6px}
+    .primary{width:100%;margin-top:18px;background:#5865f2;padding:12px;font-weight:700}
+    .status{margin-top:14px;line-height:1.5;overflow-wrap:anywhere}.muted{font-size:12px;color:#b5bac1}
+    .hidden{display:none!important}.admin-pill{display:inline-block;padding:5px 9px;border-radius:20px;background:#174d36;color:#9ff0c2;font-size:12px;font-weight:700}
+    a{color:#aab2ff}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  </style>
+</head>
+<body>
+  <main class="admin-card">
+    <div class="admin-brand"><div class="admin-logo">CH</div><div><strong>ChatHub</strong><div class="muted">Private administration</div></div></div>
+    <section id="loginView">
+      <h1>Admin sign in</h1>
+      <p class="sub">Sign in with your regular ChatHub email and password. Only the account explicitly allowlisted in Supabase can enter.</p>
+      <form id="loginForm">
+        <label for="email">Email address</label><input id="email" type="email" autocomplete="username" required>
+        <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+        <button class="primary" type="submit">Sign in securely</button>
+      </form>
+      <p id="loginStatus" class="status" role="status"></p>
+      <p class="muted">No separate admin password is created here. Admin access is granted only from the Supabase SQL Editor.</p>
+    </section>
+    <section id="adminView" class="hidden">
+      <div class="topline"><h1>Admin dashboard</h1><span class="admin-pill">ADMIN VERIFIED</span></div>
+      <p class="sub">You are signed in with an account whose user ID is on the private admin allowlist.</p>
+      <p id="adminEmail"></p>
+      <p class="muted">This is the protected admin entry point. Administrative operations must be implemented with server-side authorization before they can safely change accounts or content.</p>
+      <button id="signOut" class="primary" type="button">Sign out</button>
+    </section>
+    <p><a href="./">← Back to ChatHub</a></p>
+  </main>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
