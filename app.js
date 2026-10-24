@@ -12,7 +12,7 @@ async function react(id){if(demo){const m=messages.find(x=>x.id===id);if(m)m.rea
 $("composer").onsubmit=async e=>{e.preventDefault();const content=$("message").value.trim();if(!content||!user||!channelId)return;$("message").value="";if(demo){const m={id:crypto.randomUUID(),channel_id:channelId,content,author:name(),created_at:new Date().toISOString(),reactions:0};messages.push(m);localStorage.setItem("chathub-messages",JSON.stringify([...JSON.parse(localStorage.getItem("chathub-messages")||"[]"),m]));render();return}const r=await db.from("messages").insert({channel_id:channelId,user_id:user.id,content}).select("*,profiles(display_name)").single();if(r.error)toast(r.error.message);else{messages.push({...r.data,author:r.data.profiles?.display_name||name(),reactions:0});render()}};
 $("account").onclick=async()=>{if(user){if(!demo)await db.auth.signOut();user=null;profile=null;servers=[];channels=[];messages=[];render();$("auth").showModal()}else $("auth").showModal()};$("authForm").onsubmit=async e=>{e.preventDefault();const email=$("email").value,password=$("password").value;if(demo){user={id:"demo-user",email};profile={display_name:$("displayName").value||email.split("@")[0]};servers=[demoServer];channels=demoChannels;serverId=demoServer.id;channelId=demoChannels[0].id;await loadMessages();$("auth").close();banner("Demo mode: messages are local to this browser, not shared.");render();return}const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$("displayName").value||email.split("@")[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error){$("authError").textContent=r.error.message;return}user=r.data.user;profile={display_name:user.user_metadata?.display_name||email.split("@")[0]};if(signup&&!r.data.session){$("authError").textContent="Check your email to confirm your account, then sign in.";return}await loadServers();$("auth").close();banner("Connected to Supabase.");render()};$("switchAuth").onclick=()=>{signup=!signup;$("signIn").textContent=signup?"Create account":"Sign in";$("switchAuth").textContent=signup?"I already have an account":"Create account"};
 async function loadServers(){if(demo){servers=[demoServer];channels=demoChannels;serverId=demoServer.id;channelId=demoChannels[0].id;return}const r=await db.from("server_members").select("role,servers(id,name)");if(r.error){toast(r.error.message);return}servers=(r.data||[]).map(x=>x.servers).filter(Boolean);if(servers[0])await selectServer(servers[0].id)}
-$("newServer").onclick=async()=>{if(!user)return $("auth").showModal();const n=prompt("Server name");if(!n?.trim())return;if(demo){const s={id:crypto.randomUUID(),name:n.trim()};servers.push(s);const c={id:crypto.randomUUID(),server_id:s.id,name:"general",topic:""};channels.push(c);serverId=s.id;channelId=c.id;render();return}const r=await db.from("servers").insert({name:n.trim(),owner_id:user.id}).select().single();if(r.error)return toast(r.error.message);await db.from("channels").insert({server_id:r.data.id,name:"general"});await loadServers();render()};$("newChannel").onclick=async()=>{if(!user||!serverId)return toast("Sign in and select a server first.");const n=prompt("Channel name");if(!n?.trim())return;if(demo){const c={id:crypto.randomUUID(),server_id:serverId,name:n.trim().replace(/\s+/g,"-"),topic:""};channels.push(c);channelId=c.id;render();return}const r=await db.from("channels").insert({server_id:serverId,name:n.trim().replace(/\s+/g,"-")}).select().single();if(r.error)return toast(r.error.message);channels.push(r.data);channelId=r.data.id;render()};$("mobileMenu").onclick=()=>document.querySelector(".channels").classList.toggle("open");
+$("newServer").onclick=async()=>{if(!user)return $("auth").showModal();const n=await askForName("server");if(!n)return;if(demo){const s={id:crypto.randomUUID(),name:n.trim()};servers.push(s);const c={id:crypto.randomUUID(),server_id:s.id,name:"general",topic:""};channels.push(c);serverId=s.id;channelId=c.id;render();return}const r=await db.from("servers").insert({name:n.trim(),owner_id:user.id}).select().single();if(r.error)return toast(r.error.message);await db.from("channels").insert({server_id:r.data.id,name:"general"});await loadServers();render()};$("newChannel").onclick=async()=>{if(!user||!serverId)return toast("Sign in and select a server first.");const n=await askForName("channel");if(!n)return;if(demo){const c={id:crypto.randomUUID(),server_id:serverId,name:n.trim().replace(/\s+/g,"-"),topic:""};channels.push(c);channelId=c.id;render();return}const r=await db.from("channels").insert({server_id:serverId,name:n.trim().replace(/\s+/g,"-")}).select().single();if(r.error)return toast(r.error.message);channels.push(r.data);channelId=r.data.id;render()};$("mobileMenu").onclick=()=>document.querySelector(".channels").classList.toggle("open");
 async function start(){if(demo){banner("Demo mode: configure config.js and supabase/schema.sql for real accounts and shared chat.");render();$("auth").showModal();return}const {data}=await db.auth.getSession();if(data.session){user=data.session.user;profile={display_name:user.user_metadata?.display_name||user.email?.split("@")[0]};await loadServers();await loadMessages();render()}else{$("auth").showModal();render()}db.auth.onAuthStateChange(async(_e,s)=>{if(s&&!user){user=s.user;profile={display_name:user.user_metadata?.display_name||user.email?.split("@")[0]};await loadServers();await loadMessages();render()}})}start();
 
 // Friend requests and server joining.
@@ -54,7 +54,7 @@ $("sendFriendRequest").onclick=async()=>{
 $("joinServer").onclick=async()=>{
   if(!user)return $("auth").showModal();
   if(demo)return toast("Server joining requires a configured Supabase project.");
-  const id=prompt("Paste the server ID shared by the server owner:");if(!id?.trim())return;
+  const id=await askForServerId();if(!id)return;
   const check=await db.from("servers").select("id,name").eq("id",id.trim()).maybeSingle();
   if(check.error||!check.data)return toast(check.error?.message||"Server not found. Check the server ID.");
   const join=await db.from("server_members").insert({server_id:check.data.id,user_id:user.id,role:"member"});
@@ -63,10 +63,41 @@ $("joinServer").onclick=async()=>{
 };
 
 
+// Custom mobile-friendly dialogs instead of browser-native prompt boxes.
+let nameResolve=null, joinResolve=null;
+function askForName(kind){
+  $("createTitle").textContent=kind==="server"?"Create a server":"Create a channel";
+  $("createName").value="";
+  $("createName").placeholder=kind==="server"?"e.g. Gaming Community":"e.g. general";
+  $("createTopic").closest("label").style.display=kind==="server"?"block":"none";
+  $("createDialog").showModal();
+  $("createName").focus();
+  return new Promise(resolve=>{nameResolve=resolve;});
+}
+$("createForm").addEventListener("submit",e=>{
+  e.preventDefault();const value=$("createName").value.trim();
+  if(!value)return;
+  $("createDialog").close();if(nameResolve){nameResolve(value);nameResolve=null;}
+});
+$("createDialog").addEventListener("close",()=>{if(nameResolve){nameResolve(null);nameResolve=null;}});
+function askForServerId(){
+  $("joinServerId").value="";$("joinError").textContent="";
+  $("joinDialog").showModal();$("joinServerId").focus();
+  return new Promise(resolve=>{joinResolve=resolve;});
+}
+$("joinForm").addEventListener("submit",e=>{
+  e.preventDefault();const value=$("joinServerId").value.trim();
+  if(!value){$("joinError").textContent="Please enter a server ID.";return;}
+  $("joinDialog").close();if(joinResolve){joinResolve(value);joinResolve=null;}
+});
+$("joinDialog").addEventListener("close",()=>{if(joinResolve){joinResolve(null);joinResolve=null;}});
+$("menuCreateServer").onclick=()=>{$("serverMenuDialog").close();$("newServer").click();};
+$("menuJoinServer").onclick=()=>{$("serverMenuDialog").close();$("joinServer").click();};
+
 // Discord-style navigation shell and mobile drawers.
 function showFriends(){if(!user)return $("auth").showModal();$("friendsDialog").showModal();refreshFriends();}
 $("openFriendsNav").onclick=showFriends;$("openFriendsSmall").onclick=showFriends;$("friendsButton").onclick=showFriends;
 $("openDmsNav").onclick=async()=>{if(!user)return $("auth").showModal();$("dmDialog").showModal();await refreshFriends();renderDmFriends();};
 $("homeNav").onclick=()=>{document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.id==="homeNav"));document.querySelector(".channels")?.classList.remove("open");};
-$("serverMenu").onclick=()=>{if(!user)return $("auth").showModal();const choice=prompt("Server options: type invite to join a server, or create to make a server.");if(choice?.toLowerCase()==="create")$("newServer").click();else if(choice?.toLowerCase()==="invite")$("joinServer").click();};
+$("serverMenu").onclick=()=>{if(!user)return $("auth").showModal();$("serverMenuDialog").showModal();};
 function renderDmFriends(){const root=$("dmFriends");root.replaceChildren();const rows=friendCache.filter(f=>f.status==="accepted");if(!rows.length){$("dmStatus").textContent="Add or accept friends first. Direct message conversations need the DM database setup to be enabled.";return;}for(const f of rows){const id=f.requester_id===user.id?f.addressee_id:f.requester_id;const item=document.createElement("div");item.className="friend-row";const label=document.createElement("span");label.textContent="Friend · "+id;const button=document.createElement("button");button.textContent="Open DM";button.onclick=()=>{$("dmStatus").textContent="DM UI selected. The current database schema needs its conversation policies wired before private messages can be sent.";};item.append(label,button);root.append(item);}}
