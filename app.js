@@ -61,3 +61,12 @@ $("joinServer").onclick=async()=>{
   if(join.error){if(join.error.code==="23505")return toast("You are already a member.");return toast(join.error.message);}
   await loadServers();render();toast("Joined "+check.data.name+".");
 };
+
+
+// Discord-style navigation shell and mobile drawers.
+function showFriends(){if(!user)return $("auth").showModal();$("friendsDialog").showModal();refreshFriends();}
+$("openFriendsNav").onclick=showFriends;$("openFriendsSmall").onclick=showFriends;$("friendsButton").onclick=showFriends;
+$("openDmsNav").onclick=async()=>{if(!user)return $("auth").showModal();$("dmDialog").showModal();await refreshFriends();renderDmFriends();};
+$("homeNav").onclick=()=>{document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.id==="homeNav"));document.querySelector(".channels")?.classList.remove("open");};
+$("serverMenu").onclick=()=>{if(!user)return $("auth").showModal();const choice=prompt("Server options: type invite to join a server, or create to make a server.");if(choice?.toLowerCase()==="create")$("newServer").click();else if(choice?.toLowerCase()==="invite")$("joinServer").click();};
+function renderDmFriends(){const root=$("dmFriends");root.replaceChildren();const rows=friendCache.filter(f=>f.status==="accepted");if(!rows.length){$("dmStatus").textContent="Add or accept friends first. Direct message conversations need the DM database setup to be enabled.";return;}for(const f of rows){const id=f.requester_id===user.id?f.addressee_id:f.requester_id;const item=document.createElement("div");item.className="friend-row";const label=document.createElement("span");label.textContent="Friend · "+id;const button=document.createElement("button");button.textContent="Open DM";button.onclick=()=>{$("dmStatus").textContent="DM UI selected. The current database schema needs its conversation policies wired before private messages can be sent.";};item.append(label,button);root.append(item);}}

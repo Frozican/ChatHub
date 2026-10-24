@@ -15,3 +15,5 @@ Includes responsive dark UI, email auth wiring, server/channel UI, live message 
 
 ## Security
 Only the public anon/publishable key belongs in config.js. Never commit service_role keys or database passwords. RLS is required. The starter SQL allows self-joining a server for testing; replace this with invite-code/approval logic before public launch. Test every policy with separate accounts.
+
+The interface includes Discord-inspired nested navigation, server/channel sections, direct-message navigation, and responsive mobile drawer behavior. Direct-message sending is still pending database policy and conversation UI wiring.
