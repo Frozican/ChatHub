@@ -14,3 +14,50 @@ $("account").onclick=async()=>{if(user){if(!demo)await db.auth.signOut();user=nu
 async function loadServers(){if(demo){servers=[demoServer];channels=demoChannels;serverId=demoServer.id;channelId=demoChannels[0].id;return}const r=await db.from("server_members").select("role,servers(id,name)");if(r.error){toast(r.error.message);return}servers=(r.data||[]).map(x=>x.servers).filter(Boolean);if(servers[0])await selectServer(servers[0].id)}
 $("newServer").onclick=async()=>{if(!user)return $("auth").showModal();const n=prompt("Server name");if(!n?.trim())return;if(demo){const s={id:crypto.randomUUID(),name:n.trim()};servers.push(s);const c={id:crypto.randomUUID(),server_id:s.id,name:"general",topic:""};channels.push(c);serverId=s.id;channelId=c.id;render();return}const r=await db.from("servers").insert({name:n.trim(),owner_id:user.id}).select().single();if(r.error)return toast(r.error.message);await db.from("channels").insert({server_id:r.data.id,name:"general"});await loadServers();render()};$("newChannel").onclick=async()=>{if(!user||!serverId)return toast("Sign in and select a server first.");const n=prompt("Channel name");if(!n?.trim())return;if(demo){const c={id:crypto.randomUUID(),server_id:serverId,name:n.trim().replace(/\s+/g,"-"),topic:""};channels.push(c);channelId=c.id;render();return}const r=await db.from("channels").insert({server_id:serverId,name:n.trim().replace(/\s+/g,"-")}).select().single();if(r.error)return toast(r.error.message);channels.push(r.data);channelId=r.data.id;render()};$("mobileMenu").onclick=()=>document.querySelector(".channels").classList.toggle("open");
 async function start(){if(demo){banner("Demo mode: configure config.js and supabase/schema.sql for real accounts and shared chat.");render();$("auth").showModal();return}const {data}=await db.auth.getSession();if(data.session){user=data.session.user;profile={display_name:user.user_metadata?.display_name||user.email?.split("@")[0]};await loadServers();await loadMessages();render()}else{$("auth").showModal();render()}db.auth.onAuthStateChange(async(_e,s)=>{if(s&&!user){user=s.user;profile={display_name:user.user_metadata?.display_name||user.email?.split("@")[0]};await loadServers();await loadMessages();render()}})}start();
+
+// Friend requests and server joining.
+let friendCache=[];
+async function refreshFriends(){
+  if(!user||demo){$("friendsStatus").textContent=demo?"Friends require a configured Supabase project.":"Sign in first.";return;}
+  const {data,error}=await db.from("friendships").select("requester_id,addressee_id,status,created_at");
+  if(error){$("friendsStatus").textContent=error.message;return;}
+  const rows=data||[];
+  const ids=[...new Set(rows.flatMap(x=>[x.requester_id,x.addressee_id]).filter(id=>id!==user.id))];
+  let profiles={};
+  if(ids.length){const p=await db.from("profiles").select("id,display_name").in("id",ids);if(p.error){$("friendsStatus").textContent=p.error.message;return;}profiles=Object.fromEntries((p.data||[]).map(x=>[x.id,x]));}
+  friendCache=rows;
+  const incoming=rows.filter(x=>x.addressee_id===user.id&&x.status==="pending");
+  const accepted=rows.filter(x=>x.status==="accepted");
+  $("incomingFriends").replaceChildren();
+  if(!incoming.length)$("incomingFriends").textContent="No incoming requests.";
+  for(const f of incoming){const row=document.createElement("div");row.className="friend-row";const label=document.createElement("span");label.textContent=profiles[f.requester_id]?.display_name||f.requester_id;const accept=document.createElement("button");accept.textContent="Accept";accept.onclick=async()=>{const {error}=await db.from("friendships").update({status:"accepted"}).eq("requester_id",f.requester_id).eq("addressee_id",user.id).eq("status","pending");if(error)toast(error.message);else{toast("Friend request accepted.");await refreshFriends();}};row.append(label,accept);$("incomingFriends").append(row);}
+  $("friendList").replaceChildren();
+  if(!accepted.length)$("friendList").textContent="No friends yet.";
+  for(const f of accepted){const id=f.requester_id===user.id?f.addressee_id:f.requester_id;const row=document.createElement("div");row.className="friend-row";const label=document.createElement("span");label.textContent=profiles[id]?.display_name||id;row.append(label);$("friendList").append(row);}
+  $("friendsStatus").textContent="Find another user by their exact display name to send a request.";
+}
+$("friendsButton").onclick=async()=>{if(!user)return $("auth").showModal();$("friendsDialog").showModal();await refreshFriends();};
+$("sendFriendRequest").onclick=async()=>{
+  if(!user||demo)return toast("Sign in to Supabase to add friends.");
+  const targetName=$("friendSearch").value.trim();if(!targetName)return;
+  const found=await db.from("profiles").select("id,display_name").ilike("display_name",targetName).limit(10);
+  if(found.error)return toast(found.error.message);
+  const target=(found.data||[]).find(p=>p.display_name.toLowerCase()===targetName.toLowerCase()&&p.id!==user.id);
+  if(!target)return $("friendsStatus").textContent="No other user with that display name was found.";
+  const existing=friendCache.find(f=>(f.requester_id===user.id&&f.addressee_id===target.id)||(f.requester_id===target.id&&f.addressee_id===user.id));
+  if(existing)return $("friendsStatus").textContent=existing.status==="accepted"?"You are already friends.":"A request already exists.";
+  const {error}=await db.from("friendships").insert({requester_id:user.id,addressee_id:target.id,status:"pending"});
+  if(error)return $("friendsStatus").textContent=error.message;
+  $("friendsStatus").textContent="Friend request sent to "+target.display_name+".";
+  $("friendSearch").value="";await refreshFriends();
+};
+$("joinServer").onclick=async()=>{
+  if(!user)return $("auth").showModal();
+  if(demo)return toast("Server joining requires a configured Supabase project.");
+  const id=prompt("Paste the server ID shared by the server owner:");if(!id?.trim())return;
+  const check=await db.from("servers").select("id,name").eq("id",id.trim()).maybeSingle();
+  if(check.error||!check.data)return toast(check.error?.message||"Server not found. Check the server ID.");
+  const join=await db.from("server_members").insert({server_id:check.data.id,user_id:user.id,role:"member"});
+  if(join.error){if(join.error.code==="23505")return toast("You are already a member.");return toast(join.error.message);}
+  await loadServers();render();toast("Joined "+check.data.name+".");
+};

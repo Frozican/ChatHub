@@ -11,7 +11,7 @@ Discord-inspired responsive chat starter for GitHub Pages and Supabase.
 6. Test with two separate accounts.
 
 ## Status
-Includes responsive dark UI, email auth wiring, server/channel UI, live message subscriptions and local demo mode. Friends/DMs, voice/video, full role administration, secure invitation codes and private attachment handling are not implemented in this starter. The schema includes some tables for future work.
+Includes responsive dark UI, email auth wiring, server/channel UI, live message subscriptions and local demo mode. Friend requests by exact display name, accepting incoming requests, joining servers by server ID, and private admin moderation are implemented. Direct messages, voice/video, secure invitation codes and private attachment handling are not implemented yet. The schema includes some tables for future work.
 
 ## Security
 Only the public anon/publishable key belongs in config.js. Never commit service_role keys or database passwords. RLS is required. The starter SQL allows self-joining a server for testing; replace this with invite-code/approval logic before public launch. Test every policy with separate accounts.
