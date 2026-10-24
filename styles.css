@@ -5,32 +5,3 @@
 @media(max-width:900px){.app{grid-template-columns:62px 220px minmax(0,1fr)}#members{display:none!important}main>header{display:flex;align-items:center;gap:8px;padding:8px 10px}main>header b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}main>header button{padding:7px 9px}.channels{z-index:5}}
 @media(max-width:640px){.app{grid-template-columns:54px minmax(0,1fr);position:relative}.rail{grid-column:1;grid-row:1;padding:10px 5px}.channels{position:absolute;left:54px;top:0;bottom:0;width:min(285px,calc(100vw - 54px));z-index:20;box-shadow:10px 0 30px #0008;transform:translateX(-120%);transition:transform .18s ease}.channels.open{transform:translateX(0)}main{grid-column:2;min-width:0}main>header{height:54px;padding:7px}main>header button{font-size:12px;padding:7px}#notice{font-size:12px;padding:8px}#composer{gap:6px;padding:8px}#composer input{min-width:0;font-size:16px}#members{display:none!important}.rail .server{width:42px;height:42px;padding:0;border-radius:14px}.rail .logo{padding:12px 5px;border-radius:14px}.welcome{padding:24px 16px}.message{padding:10px}.message .content{overflow-wrap:anywhere}dialog{padding:18px}#friendsDialog,#dmDialog{width:calc(100vw - 24px)}}
 @media(prefers-reduced-motion:reduce){.channels{transition:none}}
-
-/* Polished dialogs and touch-friendly menus */
-dialog{border-radius:18px;background:#2b2d31;border:1px solid #454750;padding:24px;color:#f2f3f5}
-dialog::backdrop{background:rgba(5,6,10,.76);backdrop-filter:blur(5px)}
-dialog h2{font-size:23px;letter-spacing:-.035em;margin:8px 0 10px}
-dialog .dialog-kicker{font-size:10px;letter-spacing:.16em;font-weight:800;color:#9ca3ff;margin:4px 0 12px}
-dialog .x{background:transparent;color:#b5bac1;font-size:24px;padding:2px 8px;border-radius:9px}
-dialog .x:hover{background:#41434b;color:white}
-dialog label{font-size:12px;font-weight:700;color:#d4d7dc;margin:20px 0}
-dialog input{font-size:16px;padding:13px 14px;border:1px solid #1c1d22;border-radius:9px;background:#1e1f22;outline:none}
-dialog input:focus{border-color:#7983ff;box-shadow:0 0 0 3px #5865f233}
-dialog button:not(.x){border-radius:9px;min-height:40px}
-dialog .secondary-action{background:#41434b;color:#e5e7eb}
-dialog .secondary-action:hover{background:#50525c}
-.menu-dialog{width:min(440px,calc(100vw - 28px));padding:26px}
-.menu-choice{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:13px;margin:10px 0;background:#35373e;border:1px solid #454750;border-radius:12px!important}
-.menu-choice:hover{background:#3d4050;border-color:#737cff}
-.menu-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:#5865f2;font-size:23px}
-.menu-choice>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:4px}
-.menu-choice strong{font-size:14px}
-.menu-choice small{font-size:12px;color:#b5bac1;font-weight:400}
-.menu-arrow{font-size:25px;color:#9ca3ff}
-.menu-dialog .secondary-action{width:100%;margin-top:8px}
-.dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
-.dialog-actions button:last-child{background:#5865f2}
-.dialog-actions button:last-child:hover{background:#4752c4}
-.form-error{color:#ff9b9b;font-size:12px}
-.server-header #serverMenu{min-width:30px}
-@media(max-width:640px){dialog{padding:21px;border-radius:18px}dialog h2{font-size:21px}.menu-choice{padding:12px}.dialog-actions button{flex:1}}
