@@ -1,3 +1,3 @@
-// Only the public anon/publishable key belongs here. Never commit service_role keys.
-export const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
-export const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+// Public Supabase configuration
+export const SUPABASE_URL = "https://lrrzaeqnlkyvsblwirvf.supabase.co";
+export const SUPABASE_ANON_KEY = "DEIN_PUBLISHABLE_KEY";
