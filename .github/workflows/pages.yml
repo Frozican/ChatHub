@@ -1,4 +1,5 @@
 name: Deploy ChatHub to GitHub Pages
+# Trigger refresh: 2026-10-24
 
 on:
   push:
